@@ -1,0 +1,57 @@
+# STM32 dev environment without devcontainers.
+#
+# Usage (from the repo root):
+#   docker compose build                          # build the image once
+#   docker compose run --rm stm32-dev             # one-off shell; workspace mounted
+#   docker compose up -d && docker compose exec stm32-dev bash   # long-running container
+#
+# Windows/WSL2 notes:
+#   - Attach USB probes first from PowerShell:
+#       usbipd bind --busid <BUSID>
+#       usbipd attach --wsl --busid <BUSID>
+#   - Export UID/GID in your shell before running compose so bind-mount
+#     artifacts are owned by you (defaults below assume 1000:1000):
+#       export UID=$(id -u) GID=$(id -g)
+#   - WSLg GUI forwarding works if DISPLAY/WAYLAND_DISPLAY are set in your
+#     WSL shell (compose passes them through).
+
+services:
+  stm32-dev:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    image: stm32-dev:local
+    container_name: stm32-dev
+    init: true
+    stdin_open: true
+    tty: true
+    # Run as the host user so build artifacts are not root-owned.
+    # Numeric defaults can be overridden: UID=1001 GID=1001 docker compose run ...
+    user: "${UID:-1000}:${GID:-1000}"
+    group_add:
+      - "20"    # dialout (serial ports)
+      - "110"   # plugdev (usb devices)
+    device_cgroup_rules:
+      - "c 189:* rmw"   # USB serial devices (ST-Link / J-Link)
+    volumes:
+      - .:/workspace
+      # Named cache volume for the build dir: sidesteps the slow WSL2 9P
+      # bridge for thousands of small object files.
+      - stm32-build-cache:/workspace/build
+      # WSLg / X11 forwarding (harmless if the socket does not exist on
+      # non-graphical hosts).
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+    environment:
+      DISPLAY: "${DISPLAY:-}"
+      WAYLAND_DISPLAY: "${WAYLAND_DISPLAY:-}"
+      STM32_CUBE_F4_PATH: /opt/STM32CubeF4
+      STM32_CUBE_F7_PATH: /opt/STM32CubeF7
+      STM32_CUBE_G4_PATH: /opt/STM32CubeG4
+      STM32_CUBE_H7_PATH: /opt/STM32CubeH7
+      STM32_CUBE_L4_PATH: /opt/STM32CubeL4
+    working_dir: /workspace
+    # Keep the container alive as an attachable dev shell.
+    command: sleep infinity
+
+volumes:
+  stm32-build-cache:

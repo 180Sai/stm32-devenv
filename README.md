@@ -8,12 +8,34 @@ VS Code devcontainer for STM32 embedded development.
 - `.devcontainer/Dockerfile` — Ubuntu 24.04 + `gcc-arm-none-eabi`, `gdb-multiarch`, CMake/Ninja, OpenOCD, `stlink-tools`, probe-rs
 - `.devcontainer/post-create.sh` — toolchain sanity check on container build
 - `.devcontainer/post-start.sh` — runtime connectivity check (catches WSLg / Docker socket disruptions)
+- `docker-compose.yml` — same environment without devcontainers (plain Docker/Compose workflow)
 
 ## Usage
 
 1. Open this folder in VS Code → **Reopen in Container**.
 2. Build firmware with CMake Tools or `cmake -G Ninja -B build && cmake --build build`.
 3. Flash/debug via Cortex-Debug (OpenOCD or probe-rs).
+
+## Usage without devcontainers (docker compose)
+
+When VS Code devcontainers are unavailable (CI runners, other editors, CLI-only hosts):
+
+```bash
+docker compose build                                # build the image once
+docker compose run --rm stm32-dev                   # one-off shell in /workspace
+docker compose up -d                                # or: long-running container
+docker compose exec stm32-dev bash                  #     attach to it
+docker compose down                                 #     stop it
+```
+
+The compose service mirrors the devcontainer config: same image, host-UID user
+mapping (`UID`/`GID` env vars, defaults 1000:1000), `dialout`/`plugdev` groups,
+USB device-cgroup rule for ST-Link/J-Link, WSLg/X11 socket passthrough, and the
+`STM32_CUBE_*_PATH` environment contract.
+
+A named volume (`stm32-build-cache`) backs `/workspace/build`, which sidesteps
+the slow WSL2 9P bridge for object files and preserves incremental builds
+across container restarts.
 
 ## Prerequisites
 
