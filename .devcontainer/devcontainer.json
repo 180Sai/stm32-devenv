@@ -1,0 +1,63 @@
+{
+  "name": "STM32 Dev",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools-extension-pack",
+        "marus25.cortex-debug",
+        "ms-vscode.cmake-tools",
+        "twxs.cmake",
+        "dan-c-underwood.arm",
+        "ms-vscode.vscode-serial-monitor"
+      ],
+      "settings": {
+        "cmake.generator": "Ninja",
+        "C_Cpp.default.compilerPath": "/usr/bin/arm-none-eabi-gcc",
+        "cortex-debug.gdbPath": "/usr/bin/gdb-multiarch",
+        "files.associations": {
+          "*.h": "c"
+        },
+        "terminal.integrated.defaultProfile.wsl": "bash",
+        "terminal.integrated.profiles.wsl": {
+          "bash": {
+            "path": "bash",
+            "args": ["-l"]
+          }
+        }
+      }
+    }
+  },
+  "remoteUser": "vscode",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "runArgs": [
+    "--user",
+    "${localEnv:UID}:${localEnv:GID}",
+    "--group-add",
+    "plugdev",
+    "--group-add",
+    "dialout",
+    "--device-cgroup-rule",
+    "c 189:* rmw",
+    "-e",
+    "DISPLAY=${env:DISPLAY}",
+    "-e",
+    "WAYLAND_DISPLAY=${env:WAYLAND_DISPLAY}",
+    "-v",
+    "/tmp/.X11-unix:/tmp/.X11-unix:ro"
+  ],
+  "remoteEnv": {
+    "DISPLAY": "${env:DISPLAY}",
+    "WAYLAND_DISPLAY": "${env:WAYLAND_DISPLAY}",
+    "STM32_CUBE_F4_PATH": "/opt/STM32CubeF4",
+    "STM32_CUBE_F7_PATH": "/opt/STM32CubeF7",
+    "STM32_CUBE_G4_PATH": "/opt/STM32CubeG4",
+    "STM32_CUBE_H7_PATH": "/opt/STM32CubeH7",
+    "STM32_CUBE_L4_PATH": "/opt/STM32CubeL4"
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "bash .devcontainer/post-start.sh"
+}
